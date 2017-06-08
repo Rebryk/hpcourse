@@ -58,14 +58,14 @@ void* producer_routine(void* arg) {
         state = NEW_VALUE;
         ((Value*) arg)->update(x);
 
-        pthread_mutex_unlock(&lock);
         pthread_cond_signal(&cond);
+        pthread_mutex_unlock(&lock);
     }
 
     pthread_mutex_lock(&lock);
     state = FINISHED;
-    pthread_mutex_unlock(&lock);
     pthread_cond_signal(&cond);
+    pthread_mutex_unlock(&lock);
 }
 
 void* consumer_routine(void* arg) {
@@ -73,8 +73,8 @@ void* consumer_routine(void* arg) {
 
     pthread_mutex_lock(&lock);
     state = OLD_VALUE;
-    pthread_mutex_unlock(&lock);
     pthread_cond_broadcast(&flag_cond);
+    pthread_mutex_unlock(&lock);
 
     int* sum = new int(0);
 
@@ -86,6 +86,7 @@ void* consumer_routine(void* arg) {
         }
 
         if (state == FINISHED) {
+            pthread_cond_signal(&cond);
             pthread_mutex_unlock(&lock);
             break;
         }
@@ -93,8 +94,8 @@ void* consumer_routine(void* arg) {
         state = OLD_VALUE;
         *sum += ((Value*) arg)->get();
 
-        pthread_mutex_unlock(&lock);
         pthread_cond_signal(&cond);
+        pthread_mutex_unlock(&lock);
     }
 
     return sum;
